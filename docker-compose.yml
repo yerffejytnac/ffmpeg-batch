@@ -3,9 +3,13 @@ version: '3.8'
 services:
   video-processor:
     build: .
-    container_name: ffmpeg-batch-processor
+    container_name: ${CONTAINER_NAME:-ffmpeg-batch-processor}
+    env_file:
+      - .env
     ports:
-      - "8000:8000"
+      # Format: <host_ip>:<host_port>:<container_port>
+      # HOST_BIND defaults to 0.0.0.0 so binding will work if not set.
+      - "${HOST_BIND:-0.0.0.0}:${HOST_PORT:-8000}:${API_PORT:-8000}"
     volumes:
       - ./data/input:/data/input
       - ./data/output:/data/output
@@ -13,7 +17,7 @@ services:
       - ./config:/app/config
     environment:
       - PYTHONUNBUFFERED=1
-      - MAX_WORKERS=4
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
+      - MAX_WORKERS=${MAX_WORKERS:-4}
+      - API_HOST=${API_HOST:-0.0.0.0}
+      - API_PORT=${API_PORT:-8000}
     restart: unless-stopped
