@@ -118,10 +118,10 @@ docker-compose exec video-processor python cli.py create "$INPUT" compress \
   --params '{"scale":"854:480","target_size_mb":null}' \
   --output "/data/output/${BASE_NAME}_480p.mp4" &
 
-# Thumbnail at 10% mark
+# Thumbnail at 10% mark (uses original video dimensions by default)
 docker-compose exec video-processor python cli.py create "$INPUT" generate_thumbnail \
-  --params '{"timestamp":"00:00:10","size":"1280x720"}' \
-  --output "/data/output/${BASE_NAME}_thumb.jpg" &
+  --params '{"timestamp":"00:00:10"}' \
+  --output "/data/output/${BASE_NAME}_thumb.webp" &
 
 wait
 echo "Processing complete for $BASE_NAME"

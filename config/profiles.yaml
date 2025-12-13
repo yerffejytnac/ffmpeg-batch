@@ -41,11 +41,9 @@ profiles:
   # Thumbnail generation
   thumbnail:
     operation: generate_thumbnail
-    description: "Generate thumbnail at 1 second mark (WebP, cover crop)"
+    description: "Generate thumbnail at 1 second mark (WebP, original dimensions)"
     parameters:
       timestamp: "00:00:01"
-      size: "1280x720"
-      image_fit: cover
       image_format: webp
       image_quality: 75
 
@@ -74,6 +72,18 @@ profiles:
       duration: 5
       fps: 10
       scale: 480
+
+  # Animated WebP preview
+  preview_webp:
+    operation: create_animated_webp
+    description: "Create 5-second animated WebP preview from start"
+    parameters:
+      start_time: "00:00:00"
+      duration: 5
+      fps: 20
+      scale: 480
+      quality: 75
+      loop: 0
 
   # 4K to 1080p
   downscale_1080p:

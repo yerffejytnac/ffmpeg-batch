@@ -92,7 +92,7 @@ async def create_job(request: JobRequest):
     Create a new video processing job.
 
     Operations: transcode, compress, add_watermark, generate_thumbnail,
-                extract_audio, create_gif, concatenate_videos, trim_video
+                extract_audio, create_gif, create_animated_webp, concatenate_videos, trim_video
     """
     try:
         # Validate input file exists

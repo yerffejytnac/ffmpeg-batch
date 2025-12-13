@@ -47,13 +47,15 @@ class Job:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if operation == "generate_thumbnail":
-            image_format = self.parameters.get("image_format", "webp")
-            ext = {"webp": "webp", "jpg": "jpg", "jpeg": "jpg", "png": "png"}.get(image_format.lower(), "webp")
+            image_format = self.parameters.get("image_format", "webp").strip().lower()
+            ext = {"webp": "webp", "jpg": "jpg", "jpeg": "jpg", "png": "png"}.get(image_format, "webp")
             return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.{ext}")
         elif operation == "create_gif":
             return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.gif")
+        elif operation == "create_animated_webp":
+            return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.webp")
         elif operation == "extract_audio":
-            audio_format = self.parameters.get("audio_format", "mp3")
+            audio_format = self.parameters.get("audio_format", "mp3").strip().lower()
             return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.{audio_format}")
         else:
             return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}{input_path.suffix}")

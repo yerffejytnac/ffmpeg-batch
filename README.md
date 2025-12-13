@@ -18,9 +18,10 @@ A production-ready, Docker-based batch video processing application powered by F
 - **Transcode**: Convert videos between formats/codecs
 - **Compress**: Reduce video file size with quality control
 - **Watermark**: Add image watermarks to videos
-- **Thumbnails**: Generate video thumbnails
+- **Thumbnails**: Generate video thumbnails with aspect ratio handling and format options
 - **Audio Extraction**: Extract audio tracks in various formats
 - **GIF Creation**: Create animated GIFs from video clips
+- **Animated WebP**: Create animated WebP from video clips (better compression than GIF)
 - **Video Trimming**: Cut videos to specific durations
 - **Concatenation**: Join multiple videos together
 
@@ -211,10 +212,11 @@ if job['status'] == 'completed':
 | `high_quality` | H.264, slow preset, CRF 18 | Archival/high quality |
 | `social_media` | 720p, target 50MB | Instagram, Facebook |
 | `mobile_optimized` | 480p, target 25MB | Mobile devices |
-| `thumbnail` | Generate thumbnail at 1s | Video previews |
+| `thumbnail` | WebP thumbnail at original size | Video previews |
 | `audio_mp3` | Extract MP3 @ 192kbps | Audio podcasts |
 | `audio_aac` | Extract AAC @ 256kbps | High quality audio |
-| `preview_gif` | 5s GIF preview | Social media previews |
+| `preview_gif` | 5s GIF preview @ 10fps | Legacy animated previews |
+| `preview_webp` | 5s animated WebP @ 20fps | Modern animated previews |
 | `downscale_1080p` | 4K to 1080p | Reduce resolution |
 | `trim_30s` | First 30 seconds | Quick previews |
 

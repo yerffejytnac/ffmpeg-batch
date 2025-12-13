@@ -26,11 +26,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Auto-extension correction**: Output file extension is automatically corrected to match the specified `image_format`
 
+- **Animated WebP creation**: New `create_animated_webp` operation for converting video segments to looping animated WebP files:
+  - Better compression and color support than GIF
+  - Configurable FPS (default 20 for smooth playback)
+  - Quality control (0-100)
+  - Loop count configuration (0 = infinite)
+  - New `preview_webp` profile for quick animated previews
+
 ### Changed
 
 - Default thumbnail format changed from JPEG to WebP for better compression and quality
 - Default thumbnail quality set to 75
-- Updated `thumbnail` profile in `profiles.yaml` with new parameters
+- Renamed `size` parameter to `image_size` for consistency with other `image_*` parameters
+- Changed `image_size` default from `"1280x720"` to `None` (uses original video dimensions)
+- Updated `thumbnail` profile to use original dimensions by default
 
 ### Fixed
 
@@ -38,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed job queue generating incorrect file extensions for thumbnail operations (now respects `image_format` parameter)
 - Fixed crop filter using top-left origin instead of center for cover mode
 - Standardized FFmpeg filter variable naming to use `iw`/`ih` consistently
+- Added whitespace stripping and case normalization for string parameters (`image_fit`, `image_format`, `audio_format`, `size`) to prevent invalid FFmpeg filter syntax
 
 ## [1.0.0] - Initial Release
 

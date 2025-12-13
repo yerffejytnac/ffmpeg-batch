@@ -158,7 +158,7 @@ class VideoProcessor:
         input_path: str,
         output_path: str,
         timestamp: str = "00:00:01",
-        size: str = "1280x720",
+        image_size: Optional[str] = None,
         image_fit: str = "cover",
         image_format: str = "webp",
         image_quality: int = 75,
@@ -170,8 +170,9 @@ class VideoProcessor:
             input_path: Path to input video file
             output_path: Path for output thumbnail (extension will be auto-corrected)
             timestamp: Time position to capture thumbnail from
-            size: Target size as "WIDTHxHEIGHT" (e.g., "1280x720")
-            image_fit: How to handle aspect ratio mismatch:
+            image_size: Target size as "WIDTHxHEIGHT" (e.g., "1280x720").
+                        If None (default), uses original video dimensions.
+            image_fit: How to handle aspect ratio mismatch (only applies when image_size is set):
                 - "cover": Scale to fill, crop excess (default)
                 - "contain": Fit inside, add black bars
                 - "none": Force exact size (may distort)
@@ -179,11 +180,12 @@ class VideoProcessor:
             image_quality: Quality 0-100 (higher is better, ignored for PNG)
             progress_callback: Optional callback for progress updates
         """
-        # Parse size dimensions
-        width, height = size.replace(":", "x").split("x")
-        
-        # Build video filter based on image_fit mode
-        vf_filter = self._build_thumbnail_filter(width, height, image_fit)
+        # Build video filter - None means no scaling (use original dimensions)
+        if image_size is None:
+            vf_filter = None
+        else:
+            width, height = [s.strip() for s in image_size.replace(":", "x").split("x")]
+            vf_filter = self._build_thumbnail_filter(width, height, image_fit)
         
         # Correct output path extension based on image_format
         output_path = self._correct_thumbnail_extension(output_path, image_format)
@@ -196,8 +198,11 @@ class VideoProcessor:
             "-i", input_path,
             "-ss", timestamp,
             "-vframes", "1",
-            "-vf", vf_filter,
         ]
+        
+        if vf_filter:
+            cmd.extend(["-vf", vf_filter])
+        
         cmd.extend(quality_args)
         cmd.extend([
             "-progress", "pipe:1",
@@ -209,6 +214,7 @@ class VideoProcessor:
 
     def _build_thumbnail_filter(self, width: str, height: str, image_fit: str) -> str:
         """Build FFmpeg video filter string for thumbnail generation."""
+        image_fit = image_fit.strip().lower()
         if image_fit == "cover":
             # Scale to fill, then crop from center to exact dimensions
             return f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}:(iw-{width})/2:(ih-{height})/2"
@@ -222,6 +228,7 @@ class VideoProcessor:
     def _correct_thumbnail_extension(self, output_path: str, image_format: str) -> str:
         """Correct output path extension to match the specified image format."""
         path = Path(output_path)
+        image_format = image_format.strip().lower()
         
         extension_map = {
             "webp": ".webp",
@@ -230,7 +237,7 @@ class VideoProcessor:
             "png": ".png"
         }
         
-        correct_ext = extension_map.get(image_format.lower(), ".webp")
+        correct_ext = extension_map.get(image_format, ".webp")
         
         # Replace extension if it doesn't match
         if path.suffix.lower() != correct_ext:
@@ -242,11 +249,12 @@ class VideoProcessor:
         """Get format-specific quality arguments for thumbnail generation."""
         # Clamp quality to valid range
         quality = max(0, min(100, quality))
+        image_format = image_format.strip().lower()
         
-        if image_format.lower() == "png":
+        if image_format == "png":
             # PNG is lossless, no quality param needed
             return []
-        elif image_format.lower() == "webp":
+        elif image_format == "webp":
             # WebP uses 0-100 scale (higher is better)
             return ["-quality", str(quality)]
         else:
@@ -265,6 +273,7 @@ class VideoProcessor:
         progress_callback: Optional[callable] = None
     ) -> Dict:
         """Extract audio from video."""
+        audio_format = audio_format.strip().lower()
 
         codec_map = {
             "mp3": "libmp3lame",
@@ -307,6 +316,48 @@ class VideoProcessor:
             "-i", input_path,
             "-vf", f"fps={fps},scale={scale}:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse",
             "-loop", "0",
+            "-progress", "pipe:1",
+            "-y",
+            output_path
+        ]
+
+        return self._execute_ffmpeg(cmd, input_path, progress_callback)
+
+    def create_animated_webp(
+        self,
+        input_path: str,
+        output_path: str,
+        start_time: str = "00:00:00",
+        duration: int = 5,
+        fps: int = 20,
+        scale: int = 480,
+        quality: int = 75,
+        loop: int = 0,
+        progress_callback: Optional[callable] = None
+    ) -> Dict:
+        """Convert video segment to animated WebP.
+        
+        Args:
+            input_path: Path to input video file
+            output_path: Path for output WebP file
+            start_time: Start timestamp (e.g., "00:00:05" or "5")
+            duration: Duration in seconds
+            fps: Frames per second (default 20 for smooth playback)
+            scale: Width to scale to, height auto-calculated to maintain aspect ratio
+            quality: WebP quality 0-100 (higher is better)
+            loop: Number of loops, 0 = infinite loop
+            progress_callback: Optional callback for progress updates
+        """
+        cmd = [
+            self.ffmpeg_path,
+            "-ss", start_time,
+            "-t", str(duration),
+            "-i", input_path,
+            "-vf", f"fps={fps},scale={scale}:-1:flags=lanczos",
+            "-c:v", "libwebp",
+            "-loop", str(loop),
+            "-quality", str(quality),
+            "-an",
             "-progress", "pipe:1",
             "-y",
             output_path
