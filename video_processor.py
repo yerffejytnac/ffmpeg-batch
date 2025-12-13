@@ -158,7 +158,8 @@ class VideoProcessor:
         input_path: str,
         output_path: str,
         timestamp: str = "00:00:01",
-        size: str = "1280x720"
+        size: str = "1280x720",
+        progress_callback: Optional[callable] = None
     ) -> Dict:
         """Generate thumbnail from video."""
 
@@ -168,11 +169,12 @@ class VideoProcessor:
             "-ss", timestamp,
             "-vframes", "1",
             "-vf", f"scale={size}",
+            "-progress", "pipe:1",
             "-y",
             output_path
         ]
 
-        return self._execute_ffmpeg(cmd, input_path, None)
+        return self._execute_ffmpeg(cmd, input_path, progress_callback)
 
     def extract_audio(
         self,
