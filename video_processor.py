@@ -159,22 +159,102 @@ class VideoProcessor:
         output_path: str,
         timestamp: str = "00:00:01",
         size: str = "1280x720",
+        image_fit: str = "cover",
+        image_format: str = "webp",
+        image_quality: int = 75,
         progress_callback: Optional[callable] = None
     ) -> Dict:
-        """Generate thumbnail from video."""
-
+        """Generate thumbnail from video.
+        
+        Args:
+            input_path: Path to input video file
+            output_path: Path for output thumbnail (extension will be auto-corrected)
+            timestamp: Time position to capture thumbnail from
+            size: Target size as "WIDTHxHEIGHT" (e.g., "1280x720")
+            image_fit: How to handle aspect ratio mismatch:
+                - "cover": Scale to fill, crop excess (default)
+                - "contain": Fit inside, add black bars
+                - "none": Force exact size (may distort)
+            image_format: Output format - "webp", "jpg", or "png"
+            image_quality: Quality 0-100 (higher is better, ignored for PNG)
+            progress_callback: Optional callback for progress updates
+        """
+        # Parse size dimensions
+        width, height = size.replace(":", "x").split("x")
+        
+        # Build video filter based on image_fit mode
+        vf_filter = self._build_thumbnail_filter(width, height, image_fit)
+        
+        # Correct output path extension based on image_format
+        output_path = self._correct_thumbnail_extension(output_path, image_format)
+        
+        # Build quality arguments based on format
+        quality_args = self._get_thumbnail_quality_args(image_format, image_quality)
+        
         cmd = [
             self.ffmpeg_path,
             "-i", input_path,
             "-ss", timestamp,
             "-vframes", "1",
-            "-vf", f"scale={size}",
+            "-vf", vf_filter,
+        ]
+        cmd.extend(quality_args)
+        cmd.extend([
             "-progress", "pipe:1",
             "-y",
             output_path
-        ]
+        ])
 
         return self._execute_ffmpeg(cmd, input_path, progress_callback)
+
+    def _build_thumbnail_filter(self, width: str, height: str, image_fit: str) -> str:
+        """Build FFmpeg video filter string for thumbnail generation."""
+        if image_fit == "cover":
+            # Scale to fill, then crop from center to exact dimensions
+            return f"scale={width}:{height}:force_original_aspect_ratio=increase,crop={width}:{height}:(iw-{width})/2:(ih-{height})/2"
+        elif image_fit == "contain":
+            # Scale to fit inside, pad with black bars
+            return f"scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}:(ow-iw)/2:(oh-ih)/2"
+        else:
+            # "none" - force exact size (legacy behavior, may distort)
+            return f"scale={width}:{height}"
+
+    def _correct_thumbnail_extension(self, output_path: str, image_format: str) -> str:
+        """Correct output path extension to match the specified image format."""
+        path = Path(output_path)
+        
+        extension_map = {
+            "webp": ".webp",
+            "jpg": ".jpg",
+            "jpeg": ".jpg",
+            "png": ".png"
+        }
+        
+        correct_ext = extension_map.get(image_format.lower(), ".webp")
+        
+        # Replace extension if it doesn't match
+        if path.suffix.lower() != correct_ext:
+            return str(path.with_suffix(correct_ext))
+        
+        return output_path
+
+    def _get_thumbnail_quality_args(self, image_format: str, quality: int) -> List[str]:
+        """Get format-specific quality arguments for thumbnail generation."""
+        # Clamp quality to valid range
+        quality = max(0, min(100, quality))
+        
+        if image_format.lower() == "png":
+            # PNG is lossless, no quality param needed
+            return []
+        elif image_format.lower() == "webp":
+            # WebP uses 0-100 scale (higher is better)
+            return ["-quality", str(quality)]
+        else:
+            # JPEG uses q:v with 2-31 scale (lower is better)
+            # Convert 0-100 to 31-2 range
+            jpeg_quality = int(31 - (quality * 29 / 100))
+            jpeg_quality = max(2, min(31, jpeg_quality))
+            return ["-q:v", str(jpeg_quality)]
 
     def extract_audio(
         self,

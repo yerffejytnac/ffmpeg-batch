@@ -41,10 +41,13 @@ profiles:
   # Thumbnail generation
   thumbnail:
     operation: generate_thumbnail
-    description: "Generate thumbnail at 1 second mark"
+    description: "Generate thumbnail at 1 second mark (WebP, cover crop)"
     parameters:
       timestamp: "00:00:01"
       size: "1280x720"
+      image_fit: cover
+      image_format: webp
+      image_quality: 75
 
   # Audio extraction MP3
   audio_mp3:

@@ -30,9 +30,9 @@ class Job:
     ):
         self.id = str(uuid.uuid4())
         self.input_file = input_file
-        self.output_file = output_file or self._generate_output_path(input_file, operation)
         self.operation = operation
         self.parameters = parameters
+        self.output_file = output_file or self._generate_output_path(input_file, operation)
         self.status = JobStatus.PENDING
         self.progress = 0.0
         self.created_at = datetime.now()
@@ -47,7 +47,9 @@ class Job:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         if operation == "generate_thumbnail":
-            return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.jpg")
+            image_format = self.parameters.get("image_format", "webp")
+            ext = {"webp": "webp", "jpg": "jpg", "jpeg": "jpg", "png": "png"}.get(image_format.lower(), "webp")
+            return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.{ext}")
         elif operation == "create_gif":
             return str(input_path.parent / f"{input_path.stem}_{operation}_{timestamp}.gif")
         elif operation == "extract_audio":
